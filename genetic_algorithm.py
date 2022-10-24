@@ -1,5 +1,7 @@
 import random
 
+from sklearn.utils import shuffle
+
 # Initialize target
 target = 11001000 # 200
 
@@ -12,22 +14,28 @@ population = [1110011, 1100, 11, 11011, 1100101,               # 115, 12, 3, 27,
 
 mut_prob_count = 0
 
-# TODO Create a class with a main method that runs this function only 
-# TODO the goal is to be able to use the function in a loop and see the results on average
 
 # To be called inside of the main function
 def genetic_algorithm():
+    global population
+    counter = 0
     # While target not reached (result is set in selection algorithm when an individual has fitness == 0)
     while (result == 0):
-        # Fitness is measured throgh selection and the two weakest individuals are removed
-        select()  # TODO could randomize how many are removed... (or use a specific percentage)
+        # Fitness is measured through selection and the weakest are removed
+        select() 
+        if (counter == 1000):
+            print("Randomizing")
+            randomize()
+            counter = 0
+
         # Combining the selected individuals "genes"
         new_gen = crossover()
         # Mutate their genes (possibly)
         new_gen = mutation(new_gen)
         # Apply the new generation to the population 
-        population.clear() #TODO could be unnecessary and could be that the parentheses is not necessary hmmm.....
+        population.clear() 
         population = new_gen[:] 
+        counter += 1
 
     # Loop broken when target found
     return result
@@ -38,47 +46,62 @@ def fitness(individual):
     individual_dec = to_decimal(individual)
     target_dec = to_decimal(target)
 
-    return -abs(individual_dec - target_dec)
+    return abs(individual_dec - target_dec) #Should be -abs
 
-# Selection algorithm that removes the two weakest individuals and sorts population by fitness
+
 def select():
     global population
+    global result
     strongest = []
-    # Add the first individual to the list of strongest individuals
-    strongest.append(population[0])
-    lowest_fitness = fitness(strongest[0])
+
+    best_fitness = 255
+    total_fitness = 0
+
     for i in range(len(population)):
-        if (i == 0):
-            continue
-        # If decimal version of i has a lower fitness than the current strongest
-        current_fitness = fitness(population[i]) 
+
+        current_fitness = fitness(population[i])
+        total_fitness += current_fitness
+
+        if (current_fitness < best_fitness):
+            best_fitness = current_fitness
+
+        # If fit, the individual makes it past selection
+        if (current_fitness < 120):
+            strongest.append(population[i])
+
         # Algorithm termination base line
         if (current_fitness == 0):
-            # This bit-value is the final result
             result = population[i]
-            break # No need to continue the loop
-        if (current_fitness < lowest_fitness):
-            # Set new lowest fitness
-            lowest_fitness = current_fitness
-            # Append first
-            strongest.insert(0, population[i])
-        else:
-            # Append at end of list
-            strongest.append(population[i])
+            break 
     
+    # Print the best fitness for this generation
+    print("Best fitness of the generation: ", best_fitness)
+    print("Average fitness of the generation: ", total_fitness/(len(population)))
+
     # Cut of the two weakest (the two first) elements and assign to the population
-    population.clear()
-    population = strongest[2:]
+    population.clear() 
+
+    # Cut of 10% (weakest individuals at the end of the list)
+    population = strongest[:] 
+
+    # If population is odd number, make it an even number
+    if (len(population) % 2 != 0):
+        population = population[:-1] # pop is slow when list is large
+
 
 # Crossover algorithm
 def crossover():
+    global mut_prob_count
+    global population
     new_generation = []
 
     # Randomize the order of the population
     random.shuffle(population)
 
-
     for i in range (len(population)):
+        # Because each loop used i and i + 1, we skip every odd-i loop
+        if (i % 2 != 0): 
+            continue
 
         # Select two individuals from the population
         mom = population[i]
@@ -86,17 +109,24 @@ def crossover():
         
         # The mom and dad create a random number of children
         amount_children = child_count()
+
+        # To not empty out of individuals in population
+        if (len(population) < 10):
+            amount_children = 4
+
         moms_genes = []
         dads_genes = []
         
         if (fitness(mom) > fitness(dad)):
             # If mom has the best fitness, then dad cannot be longer than mom
             if (length(dad) > length(mom)):
-                dad = dad[:length(mom)] 
+                dad = str(dad)[:length(mom)] 
         elif (fitness(dad) > fitness(mom)):
             # If dad has the best fitness, then mom cannot be longer than dad
             if (length(mom) > length(dad)):
-                mom = mom[:length(dad)] # Slice off yet again...
+
+
+                mom = str(mom)[:length(dad)] # Slice off yet again...
             
         # Two elements in each list (split method defined in script; not python method)
         moms_genes = split(mom) 
@@ -135,8 +165,10 @@ def crossover():
     # Return the new generation
     return new_generation
 
+
 # Mutation algorithm (bit flip)
 def mutation(new_generation):
+    global mut_prob_count
 
     # 1% Chance of mutation
     if (mut_prob_count >= 100):
@@ -158,19 +190,62 @@ def mutation(new_generation):
     # Return the list, mutated individuals or not
     return new_generation
 
+# Randomizes half of the population with different bit lengths
+def randomize():
+    new_bits = []
+    iter_size = 0
+    half_target_len = length(target)/2
+
+    # Modifications to avoid floating point numbers
+    if (len(population) % 2 != 0):
+        iter_size = (len(population)-1)/4
+    else:
+        iter_size = len(population)/4
+    if (length(target) % 2 != 0):
+        half_target_len = (length(target)+1)/2  
+
+    # Generates decimal number with a specified bit length (if converted to bits)
+    for i in range (int(iter_size)):
+        rand_nr = random.getrandbits(int(half_target_len))
+        while (rand_nr == 0 or rand_nr == 1):
+            rand_nr = random.getrandbits(int(half_target_len))
+
+        new_bits.append(get_bin(rand_nr))
+
+    for i in range (int(iter_size)):
+        rand_nr = random.getrandbits(length(target))
+        while (rand_nr == 0 or rand_nr == 1):
+            rand_nr = random.getrandbits(int(half_target_len))
+
+        new_bits.append(get_bin(rand_nr))
+    
+    shuffle(new_bits)   
+
+    # Add to the population
+    population[:len(new_bits)] = new_bits
+
+
+# Decimal to binary number lambda function
+get_bin = lambda x: format(x, 'b')
+
+
 # Support method for mutation alg
 def bit_flip(individual):
-    length = len(individual) 
+    str_individual = list(str(individual)) # Strings are immutable but char-list is not
+
     # Access a random bit from the individual
-    random_bit = random.randint(1, length) 
-    str_individual = str(individual)
+    digits = length(individual) 
+    random_bit = random.randint(1, digits) 
     bit = str_individual[random_bit - 1] # -1 for correct indexation
 
     if (bit == 1):
-        str_individual[random_bit - 1] = 0
+        str_individual[random_bit - 1] = '0' 
     else:
-        str_individual[random_bit - 1] = 1
+        str_individual[random_bit - 1] = '1'
     
+    # Back to string before converting to int
+    str_individual = ''.join(str_individual)
+
     return int(str_individual)
 
 # Supporting method for crossover algorithm that returns a bit sequence in the given length
@@ -212,6 +287,7 @@ def to_decimal(bits):
 # Support method that finds the length of a number
 def length(number):
     return len(str(number)) 
+
 
 
 
