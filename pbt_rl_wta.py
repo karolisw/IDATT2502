@@ -39,22 +39,31 @@ def parse_args():
 
     return args
 
+# This is the one we use 
 class rl_agent():
     def __init__(self, idx, env_name, learning_rate, gamma, log_dir = "./tmp/gym/", seed=141) -> None:
         self.idx = idx
         self.seed = seed
         self.score = 0 # For now just use reward per episode 
         self.length = 0 # For now just use length per episode 
+
         if env_name[0:8] == "MiniGrid":
             self.env = env_create(env_name, idx)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+        elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
+            self.env = env_create(env_name, idx) #TODO env_create - what does it do
+            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False) #TODO how to assign env for PPO when ProcGen env
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:6] == "dm2gym":
             self.env = env_create(env_name, idx)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=True)
             self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
         else:
+            #self.model = DQN("MlpPolicy", env = env_name, verbose=0, create_eval_env=True)
             self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         self.model.gamma = gamma
         self.model.learning = learning_rate
@@ -242,10 +251,10 @@ class base_engine(object):
                     if return_episode_rewards:
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_length_population, i)
-                        print("At itre {} the Best Pop Score is {} Best Length is {}".format(
+                        print("At iteration {} the Best Pop Score is {} Best Length is {}".format(
                         i, self.best_score_population, self.best_length_population))
                     else:
-                        print("At itre {} the Best Pop Score is {}".format(
+                        print("At iteration {} the Best Pop Score is {}".format(
                         i, self.best_score_population))
     
 

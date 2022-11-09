@@ -1,4 +1,5 @@
 import gym
+from gym import spaces, utils
 import os
 import numpy as np
 
@@ -38,7 +39,11 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         env = make_vec_env(env_id, n_envs=1, seed=seed)
         # Automatically normalize the input features and reward
         env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
-        
+    if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
+        print("=="*10+"BigFish"+"=="*10)
+        env = gym.make('procgen:procgen-bigfish-v0')
+        env.seed(seed)
+        # TODO add more params probably
     else:
         env = gym.make(env_id)
         env.seed(seed)

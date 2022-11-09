@@ -179,7 +179,7 @@ class base_engine(object):
                 self.best_params_population = best_params_population
 
                 if (i+1) % 10== 0:
-                    print("At itre {} the Best Pop Score is {}".format(
+                    print("At iteration {} the Best Pop Score is {}".format(
                        i, self.best_score_population))
         return self.population   
 

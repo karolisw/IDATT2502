@@ -3,7 +3,7 @@ import time
 import os
 import numpy as np
 
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, DQN
 from utils.mpi_utils import MPI_Tool
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -67,22 +67,29 @@ class rl_agent(object):
         self.idx = idx
         self.seed = seed + 100*mpi_tool.rank
         self.score = 0 # For now just use reward per episode 
-        self.length = 0 # For now just use length per episode 
+        self.length = 0 # For now just use length per episode   
+        print("The env_name is: ", env_name)
         
         if env_name[0:8] == "MiniGrid":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
         elif env_name[0:6] == "dm2gym":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            #self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
         elif env_name[-12:-6] == "Bullet":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            self.model = DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            #self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
         else:
-            self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            self.model =  DQN("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            #self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         
         self.log_dir = os.path.join(log_dir, str(idx))
         self.model.gamma = gamma
@@ -260,12 +267,12 @@ class base_engine(object):
                 self.best_episode_length_population = np.min([worker.length for worker in rl_list])
                 if (i+1) % 1 == 0 and i!=0:
                     if return_episode_rewards:
-                        print("At itre {} the Best Pop Score is {} Best Length is {}".format(i, self.best_score_population, self.best_episode_length_population))
+                        print("At iteration {} the Best Pop Score is {} Best Length is {}".format(i, self.best_score_population, self.best_episode_length_population))
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Score/PBT_Results', self.best_score_population, i)
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_episode_length_population, i)
                     else:
-                        print("At itre {} the Best Pop Score is {}".format(i, self.best_score_population))
+                        print("At iteration {} the Best Pop Score is {}".format(i, self.best_score_population))
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Score/PBT_Results', self.best_score_population, i)
                         

@@ -45,20 +45,28 @@ class rl_agent():
         self.seed = seed
         self.score = 0 # For now just use reward per episode 
         self.length = 0 # For now just use length per episode 
+        
+        print("The env_name is: ", env_name)
+
         if env_name[0:8] == "MiniGrid":
             self.env = env_create(env_name, idx)
-            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx)
-            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:6] == "dm2gym":
             self.env = env_create(env_name, idx)
-            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
+            self.model = DQN("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
+            #self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
         elif env_name[0:3] == "Ant":
             self.env = env_create(env_name, idx)
-            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True)
+            self.model = DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=True)
+            #self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True)
         else:
-            self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            self.model =  DQN("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            #self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         self.model.gamma = gamma
         self.model.learning_rate = learning_rate
         self.log_dir = os.path.join(log_dir, str(idx))
@@ -294,9 +302,9 @@ class base_engine(object):
                     if return_episode_rewards:
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_episode_length_population, i)
-                        print("At itre {} the Best Pop Score is {} Best Length is {} on rank {}".format(i, self.best_score_population, self.best_episode_length_population, self.best_rank ))
+                        print("At iteration {} the Best Pop Score is {} Best Length is {} on rank {}".format(i, self.best_score_population, self.best_episode_length_population, self.best_rank ))
                     else:
-                        print("At itre {} the Best Pop Score is {} on rank {}".format(i, self.best_score_population, self.best_rank))
+                        print("At iteration {} the Best Pop Score is {} on rank {}".format(i, self.best_score_population, self.best_rank))
     
 
 def main():
