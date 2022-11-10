@@ -8,6 +8,7 @@ from utils.mpi_utils import MPI_Tool
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 from stable_baselines3.common.evaluation import evaluate_policy
 from tensorboardX import SummaryWriter
+import warnings
 
 mpi_tool = MPI_Tool()
 
@@ -74,7 +75,9 @@ class rl_agent(object):
             self.env = env_create(env_name, idx, seed=self.seed)
             self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=False, seed=self.seed)
             #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
-
+        elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
+            self.env = env_create(env_name, idx) #TODO env_create - what does it do
+            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False) 
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx, seed=self.seed)
             self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
@@ -276,7 +279,8 @@ class base_engine(object):
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Score/PBT_Results', self.best_score_population, i)
                         
-                        
+warnings.filterwarnings("ignore")
+        
 
 def main():
     args = parse_args()

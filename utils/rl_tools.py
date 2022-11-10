@@ -1,4 +1,5 @@
 import gym
+import procgen
 from gym import spaces, utils
 import os
 import numpy as np
@@ -14,7 +15,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 #from gym_minigrid.wrappers import *
 
 def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_video=False, run_name="Test"):   
-    #print(env_id[0:7])
+    print("\nenv id looks like this: ", env_id)
     if env_id[0:8] == "MiniGrid":
         print("=="*10+"MiniGrid"+"=="*10)
         env = gym.make(env_id)
@@ -41,8 +42,9 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
-        env = gym.make('procgen:procgen-bigfish-v0')
-        env.seed(seed)
+        env = gym.make('procgen-bigfish-v0')
+        #env = gym.make('procgen:procgen-bigfish-v0')
+        #env.seed(141)
         # TODO add more params probably
     else:
         env = gym.make(env_id)
