@@ -83,7 +83,7 @@ mpiexec -n 4 python pbt_rl_wta.py --num-agents 4 --env-id CartPole-v1
 #### Tensorboard support
 EVO also supports experiment monitoring with Tensorboard. Example command line to run an experiment with Tensorboard monitoring:
 ```
-mpiexe -n 4 python pbt_rl_truct_collective.py --num-agents 4 --env-id CartPole-v1 --tb-writer True
+mpiexec -n 4 python pbt_rl_truct_collective.py --num-agents 4 --env-id CartPole-v1 --tb-writer True
 ```
 ## Toy Model
 The toy example was reproduced from Fig. 2 in the [PBT paper](https://arxiv.org/abs/1711.09846)

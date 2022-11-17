@@ -73,26 +73,26 @@ class rl_agent(object):
         
         if env_name[0:8] == "MiniGrid":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=False, seed=self.seed)
-            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
             self.env = env_create(env_name, idx) #TODO env_create - what does it do
-            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False) 
+            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed) 
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
-            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            #self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
         elif env_name[0:6] == "dm2gym":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
-            #self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            #self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
+            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
         elif env_name[-12:-6] == "Bullet":
             self.env = env_create(env_name, idx, seed=self.seed)
-            self.model = DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
-            #self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            #self.model = DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
+            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True, seed=self.seed)
         else:
-            self.model =  DQN("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
-            #self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            #self.model =  DQN("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         
         self.log_dir = os.path.join(log_dir, str(idx))
         self.model.gamma = gamma
@@ -101,6 +101,19 @@ class rl_agent(object):
 
     def step(self, traing_step=2000, callback=None, vanilla=False, rmsprop=False, Adam=False):
         """one episode of RL"""
+
+        # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
+
+        checkpoint_callback = CheckpointCallback(
+            save_freq=200,
+            save_path="./logs/",
+            name_prefix="rl_model",
+            save_replay_buffer=True,
+            save_vecnormalize=True,
+)
+
+
+
         self.model.learn(total_timesteps=traing_step)#, callback=callback)
       
     def exploit(self, best_params):
@@ -278,9 +291,7 @@ class base_engine(object):
                         print("At iteration {} the Best Pop Score is {}".format(i, self.best_score_population))
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Score/PBT_Results', self.best_score_population, i)
-                        
-warnings.filterwarnings("ignore")
-        
+                                
 
 def main():
     args = parse_args()
