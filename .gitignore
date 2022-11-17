@@ -1,2 +1,6 @@
 venv
 utils/__pycache__
+logs/checkpoints
+logs/videos
+runs
+monitor/monitor.csv
