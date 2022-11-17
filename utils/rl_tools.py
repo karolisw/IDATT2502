@@ -8,13 +8,11 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
-import d4rl
 import pybullet_envs
-from gym_minigrid.wrappers import *
+from gym_minigrid.wrappers import * # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
-#from gym_minigrid.wrappers import *
 
 def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_video=False, run_name="Test"):   
     if env_id[0:8] == "MiniGrid":
@@ -46,6 +44,7 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         env = gym.make('procgen-bigfish-v0')
         #env.seed(seed)
         env = Monitor(env, filename="monitor/monitor.csv")
+        env = gym.wrappers.RecordEpisodeStatistics(env)
         env = DummyVecEnv([lambda:env])
         env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.) 
 
