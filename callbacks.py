@@ -1,6 +1,6 @@
 import gym
+import procgen
 from typing import Optional
-
 
 from stable_baselines3 import SAC
 from stable_baselines3 import PPO
@@ -11,40 +11,20 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.callbacks import ProgressBarCallback
 from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement
 
-class EventCallback(BaseCallback):
-    """
-    Base class for triggering callback on event.
-
-    :param callback: (Optional[BaseCallback]) Callback that will be called
-        when an event is triggered.
-    :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
-    """
-    def __init__(self, callback: Optional[BaseCallback] = None, verbose: int = 0):
-        super(EventCallback, self).__init__(verbose=verbose)
-        self.callback = callback
-        # Give access to the parent
-        if callback is not None:
-            self.callback.parent = self
-
-    def _on_event(self) -> bool:
-        if self.callback is not None:
-            return self.callback()
-        return True
-
 
 ################################ CHECKPOINT CALLBACK ##########################
 
 
 # Save a checkpoint every 1000 steps
 checkpoint_callback = CheckpointCallback(
-  save_freq=1000,
+  save_freq=200,
   save_path="./logs/",
   name_prefix="rl_model",
   save_replay_buffer=True,
   save_vecnormalize=True,
 )
 
-model = SAC("MlpPolicy", "Pendulum-v1")
+model = PPO("MlpPolicy", "Pendulum-v1")
 model.learn(2000, callback=checkpoint_callback)
 
 

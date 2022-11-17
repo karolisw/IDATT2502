@@ -52,8 +52,9 @@ class rl_agent():
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
+            print("we got here")
             self.env = env_create(env_name, idx) #TODO env_create - what does it do
-            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False) #TODO how to assign env for PPO when ProcGen env
+            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=False) #TODO use CNN policy if possible :p
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
@@ -259,7 +260,7 @@ class base_engine(object):
     
 
 def main():
-
+    print("inside main function")
     args = parse_args()
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     workers = workers_init(args)

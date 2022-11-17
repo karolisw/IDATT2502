@@ -1,5 +1,6 @@
 import gym
 import procgen
+from procgen import ProcgenEnv
 from gym import spaces, utils
 import os
 import numpy as np
@@ -9,9 +10,15 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
 import pybullet_envs
+
+    #VecExtractDictObs,
+    #VecMonitor,
+    #VecFrameStack,
+    #VecNormalize
+
 from gym_minigrid.wrappers import * # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecExtractDictObs,VecMonitor, VecVideoRecorder
 
 
 def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_video=False, run_name="Test"):   
@@ -38,18 +45,25 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         print("=="*10+"Bullet"+"=="*10)
         env = make_vec_env(env_id, n_envs=1, seed=seed)
         # Automatically normalize the input features and reward
-        env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
+        env = VecNormalize(venv=env, norm_obs=True, norm_reward=True, clip_obs=10.)
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
-        env = gym.make('procgen-bigfish-v0')
-        #env.seed(seed)
-        env = Monitor(env, filename="monitor/monitor.csv")
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        env = DummyVecEnv([lambda:env])
-        env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.) 
 
-        #env = gym.make('procgen:procgen-bigfish-v0')
-        # TODO add more params probably
+        env = ProcgenEnv(num_envs=64, env_name='bigfish', distribution_mode='easy', render_mode="rgb_array")
+        #env = VecExtractDictObs(env, "rgb") # To use only part of the observation
+
+        # Wrap with a VecMonitor to collect stats and avoid errors
+        env = VecMonitor(venv=env)
+
+        env = VecVideoRecorder(venv=env, video_folder="logs/videos", record_video_trigger=lambda x: x == 0, video_length=100, name_prefix="random-agent-{}".format(env_id))
+
+        #env = VecNormalize(venv=env, ob=False)
+        #env = gym.make('procgen-bigfish-v0')
+        #env.seed(seed)
+        #env = Monitor(env, filename="monitor/monitor.csv")
+        #env = gym.wrappers.RecordEpisodeStatistics(env) # COuld be removed -> not tested yet
+        #env = DummyVecEnv([lambda:env]) # Slowed down the performance greatly
+        #env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)  # Also slowed down the reward
     else:
         env = gym.make(env_id)
         env.seed(seed)

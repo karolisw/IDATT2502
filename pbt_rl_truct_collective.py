@@ -10,6 +10,9 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from tensorboardX import SummaryWriter
 import warnings
 
+from stable_baselines3.common.callbacks import CheckpointCallback
+
+
 mpi_tool = MPI_Tool()
 
 def parse_args():
@@ -76,8 +79,8 @@ class rl_agent(object):
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=False, seed=self.seed)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
-            self.env = env_create(env_name, idx) #TODO env_create - what does it do
-            self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed) 
+            self.env = env_create(env_name, idx, seed = self.seed) 
+            self.model = PPO("CnnPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed) 
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx, seed=self.seed)
             #self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
@@ -103,18 +106,14 @@ class rl_agent(object):
         """one episode of RL"""
 
         # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
-
         checkpoint_callback = CheckpointCallback(
-            save_freq=200,
+            save_freq=500,
             save_path="./logs/",
             name_prefix="rl_model",
             save_replay_buffer=True,
             save_vecnormalize=True,
 )
-
-
-
-        self.model.learn(total_timesteps=traing_step)#, callback=callback)
+        self.model.learn(total_timesteps=traing_step, callback=checkpoint_callback)
       
     def exploit(self, best_params):
         """
