@@ -7,9 +7,26 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 # from pbt_toy import pbt_engine
 from mpi4py import MPI
-from stable_baselines3 import DQN, PPO, SAC
+from stable_baselines3 import PPO
+import gym
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+
 mpi_tool = MPI_Tool()
 from tensorboardX import SummaryWriter
+
+checkpoint_callback = CheckpointCallback(
+            save_freq=7000,
+            save_path="logs/checkpoints",
+            name_prefix="rl_model-checkpoint",
+)
+
+# Separate evaluation env (for bigfish)
+eval_env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#render_mode="human", 
+                        center_agent=False,distribution_mode="easy")
+# Use deterministic actions for evaluation
+eval_callback = EvalCallback(eval_env, best_model_save_path="logs/best_models", callback_after_eval=True,
+                             log_path="logs/evaluations", eval_freq=5000,
+                             deterministic=True, render=False)
 
 def parse_args():
     # fmt: off
@@ -51,10 +68,9 @@ class rl_agent():
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
-        elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
-            print("we got here")
-            self.env = env_create(env_name, idx) #TODO env_create - what does it do
-            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=False) #TODO use CNN policy if possible :p
+        elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
+            self.env = env_create(env_name, idx) 
+            self.model = PPO("CnnPolicy", env=self.env, verbose=0) #Verbose = 1 prints out all data :-)
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
@@ -72,7 +88,9 @@ class rl_agent():
 
     def step(self, traing_step=2000, callback=None, vanilla=False, rmsprop=False, Adam=False):
         """one episode of RL"""
-        self.model.learn(total_timesteps=traing_step)
+
+        # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
+        self.model.learn(total_timesteps=traing_step, callback=[checkpoint_callback, eval_callback])
 
     def exploit(self, best_params):
 
@@ -255,12 +273,12 @@ class base_engine(object):
                         print("At iteration {} the Best Pop Score is {} Best Length is {}".format(
                         i, self.best_score_population, self.best_length_population))
                     else:
-                        print("At iteration {} the Best Pop Score is {}".format(
-                        i, self.best_score_population))
+                        print("At iteration {} the Best Pop Score is {} and the best params are {}".format(
+                        i, self.best_score_population, self.best_params_population, self))
     
 
 def main():
-    print("inside main function")
+
     args = parse_args()
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     workers = workers_init(args)

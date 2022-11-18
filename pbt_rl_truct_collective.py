@@ -8,7 +8,6 @@ from utils.mpi_utils import MPI_Tool
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 from stable_baselines3.common.evaluation import evaluate_policy
 from tensorboardX import SummaryWriter
-import warnings
 
 from stable_baselines3.common.callbacks import CheckpointCallback
 
@@ -107,7 +106,7 @@ class rl_agent(object):
 
         # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
         checkpoint_callback = CheckpointCallback(
-            save_freq=500,
+            save_freq=200,
             save_path="./logs/",
             name_prefix="rl_model",
             save_replay_buffer=True,

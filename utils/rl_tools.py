@@ -4,7 +4,7 @@ from procgen import ProcgenEnv
 from gym import spaces, utils
 import os
 import numpy as np
-
+from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.env_util import make_vec_env
@@ -48,14 +48,19 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         env = VecNormalize(venv=env, norm_obs=True, norm_reward=True, clip_obs=10.)
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
-
-        env = ProcgenEnv(num_envs=64, env_name='bigfish', distribution_mode='easy', render_mode="rgb_array")
+        #env = gym.make("procgen:procgen-bigfish-v0", render_mode="human")
+        env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#render_mode="human", 
+                        center_agent=False,distribution_mode="easy")
+        #env = procgen.ProcgenEnv(env_name='bigfish', num_envs=1)
+        #env = ProcgenEnv(num_envs=32, env_name='bigfish', distribution_mode='easy')
         #env = VecExtractDictObs(env, "rgb") # To use only part of the observation
+        # Action space should be normalized
+        #action_space = spaces.Box(low=1, high=1, shape=(4), dtype="float32")
 
         # Wrap with a VecMonitor to collect stats and avoid errors
-        env = VecMonitor(venv=env)
+        #env = VecMonitor(venv=env)
 
-        env = VecVideoRecorder(venv=env, video_folder="logs/videos", record_video_trigger=lambda x: x == 0, video_length=100, name_prefix="random-agent-{}".format(env_id))
+        #env = VecVideoRecorder(venv=env, video_folder="logs/videos", record_video_trigger=lambda x: x == 0, video_length=100, name_prefix="random-agent-{}".format(env_id))
 
         #env = VecNormalize(venv=env, ob=False)
         #env = gym.make('procgen-bigfish-v0')
