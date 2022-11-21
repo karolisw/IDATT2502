@@ -183,6 +183,11 @@ class base_population(object):
 
     def get_best_agent(self):
         return self.get_scores().index(max(self.get_scores()))
+
+    def get_best_model(self):
+        _best_id = self.get_best_agent()
+        return self.agents_pool[_best_id]
+
     
     def get_best_score(self):
         _best_id = self.get_best_agent()
