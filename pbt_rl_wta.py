@@ -14,6 +14,9 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 mpi_tool = MPI_Tool()
 from tensorboardX import SummaryWriter
 
+
+models_dir = "logs/best_models"
+
 checkpoint_callback = CheckpointCallback(
             save_freq=7000,
             save_path="logs/checkpoints",
@@ -169,6 +172,12 @@ class base_population(object):
         return [worker.score for worker in self.agents_pool]
         # return score
 
+        # Hoping to be able to call on this when we need to save the best model of the population
+    def get_best_model(self):
+        _best_id = self.get_best_agent()
+        return self.agents_pool[_best_id]
+
+        # Looks like this one retrieves the id of the best model
     def get_best_agent(self):
         return self.get_scores().index(max(self.get_scores()))
 
@@ -233,6 +242,7 @@ class base_engine(object):
             best_results_to_sent = self.population.get_best_results()
             best_params_to_sent = self.population.get_best_agent_params()
 
+
             if return_episode_rewards:
                 rec_best_results, best_score_rank = MPI.COMM_WORLD.allreduce((best_results_to_sent, mpi_tool.rank), op=MPI.MAXLOC)
                 rec_best_score, rec_best_length = rec_best_results
@@ -272,6 +282,12 @@ class base_engine(object):
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_length_population, i)
                         print("At iteration {} the Best Pop Score is {} Best Length is {}".format(
                         i, self.best_score_population, self.best_length_population))
+                        print("Saving model with id: {}".format(self.population.get_best_agent()))
+                        best_model = self.population.get_best_model()
+
+                        # saving
+                        best_model.save("{}/{}".format(models_dir, i))
+                        del best_model # we do not need it anymore
                     else:
                         print("At iteration {} the Best Pop Score is {} and the best params are {}".format(
                         i, self.best_score_population, self.best_params_population, self))
