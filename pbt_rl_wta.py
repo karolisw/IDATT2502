@@ -282,12 +282,12 @@ class base_engine(object):
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_length_population, i)
                         print("At iteration {} the Best Pop Score is {} Best Length is {}".format(
                         i, self.best_score_population, self.best_length_population))
-                        print("Saving model with id: {}".format(self.population.get_best_agent()))
-                        best_model = self.population.get_best_model()
+                        #print("Saving model with id: {}".format(self.population.get_best_agent()))
+                        best_agent = self.population.get_best_model()
+                        print("Saving model with id: {}".format(str(best_agent.idx)))
 
                         # saving
-                        best_model.save("{}/{}".format(models_dir, i))
-                        del best_model # we do not need it anymore
+                        best_agent.model.save("{}/{}".format(models_dir, i))
                     else:
                         print("At iteration {} the Best Pop Score is {} and the best params are {}".format(
                         i, self.best_score_population, self.best_params_population, self))
@@ -309,6 +309,10 @@ def main():
     # Initializing a local population
     pbt_population = base_population()
     pbt_population.create(agent_list=[workers[i] for i in local_agent_inds])
+
+    # PRINTING OUT THE ID'S FOR ALL THE AGENTS IN THE AGENT POOL -> THERE IS ONE AGENT PER THREAD :-)))))))))))))
+    for i in range(len(pbt_population.agents_pool)):
+        print("population has id: ", pbt_population.agents_pool[i].idx)
 
     # Initializing a local engin
     pbt_engine = base_engine(tb_logger=writer)

@@ -184,13 +184,10 @@ class base_population(object):
     def get_best_agent(self):
         return self.get_scores().index(max(self.get_scores()))
 
-    def get_best_model(self):
-        _best_id = self.get_best_agent()
-        return self.agents_pool[_best_id]
-
     
     def get_best_score(self):
         _best_id = self.get_best_agent()
+        print("The id of the best model is: ",_best_id)
         return self.agents_pool[_best_id].score
 
     def get_best_results(self):
@@ -315,6 +312,9 @@ def main():
     # Initializing a local population
     pbt_population = base_population()
     pbt_population.create(agent_list=[workers[i] for i in local_agent_inds],rank=mpi_tool.rank,idx_list=[workers[i].idx for i in local_agent_inds])
+
+    for i in range(len(pbt_population.agents_pool)):
+        print("population has id: ", pbt_population.idx_list[i])
 
     # Initializing a local engin
     pbt_engine = base_engine(tb_logger=writer, length_first=length_first)
