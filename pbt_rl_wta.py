@@ -24,7 +24,7 @@ checkpoint_callback = CheckpointCallback(
 eval_env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#render_mode="human", 
                         center_agent=False,distribution_mode="easy")
 # Use deterministic actions for evaluation
-eval_callback = EvalCallback(eval_env, best_model_save_path="logs/best_models", callback_after_eval=True,
+eval_callback = EvalCallback(eval_env, best_model_save_path="logs/best_models",
                              log_path="logs/evaluations", eval_freq=5000,
                              deterministic=True, render=False)
 
@@ -70,7 +70,7 @@ class rl_agent():
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
             self.env = env_create(env_name, idx) 
-            self.model = PPO("CnnPolicy", env=self.env, verbose=0) #Verbose = 1 prints out all data :-)
+            self.model = PPO("CnnPolicy", env=self.env, verbose=1, tensorboard_log="logs/tensorboard") #Verbose = 1 prints out all data :-)
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
@@ -83,14 +83,14 @@ class rl_agent():
             #self.model = DQN("MlpPolicy", env = env_name, verbose=0, create_eval_env=True)
             self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         self.model.gamma = gamma
-        self.model.learning = learning_rate
+        self.model.learning_rate = learning_rate 
         self.log_dir = os.path.join(log_dir, str(idx))
 
     def step(self, traing_step=2000, callback=None, vanilla=False, rmsprop=False, Adam=False):
         """one episode of RL"""
 
         # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
-        self.model.learn(total_timesteps=traing_step, callback=[checkpoint_callback, eval_callback])
+        self.model.learn(total_timesteps=traing_step, tb_log_name="PPO")#, callback=[checkpoint_callback, eval_callback],)
 
     def exploit(self, best_params):
 

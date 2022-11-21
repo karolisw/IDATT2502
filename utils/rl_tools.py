@@ -18,7 +18,7 @@ import pybullet_envs
 
 from gym_minigrid.wrappers import * # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecExtractDictObs,VecMonitor, VecVideoRecorder
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 
 def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_video=False, run_name="Test"):   
@@ -149,7 +149,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                   self.best_mean_reward = mean_reward
                   # Example for saving best model
                   if self.verbose > 0:
-                    print(f"Saving new best model to {self.save_path}")
+                    print(f"Saving new best model to {self.save_dir}")
                   _model_name = "ID_" + str(self.idx) + "_Best_Model"    
                   save_path = os.path.join(self.save_dir, _model_name)
                   self.model.save(save_path)
