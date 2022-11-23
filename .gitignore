@@ -1,9 +1,10 @@
 venv
 utils/__pycache__
 logs/checkpoints
+logs/best_models
+logs/sb3_logs
 logs/videos
 logs/tensorboard
-logs/evaluations
-logs/best_models
 runs
 monitor/monitor.csv
+monitor

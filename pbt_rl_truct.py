@@ -9,7 +9,8 @@ from utils.rl_tools import env_create_sb, env_create, eval_agent
 from mpi4py import MPI
 from stable_baselines3 import DQN, PPO, SAC
 mpi_tool = MPI_Tool()
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
+#from tensorboardX import SummaryWriter
 
 def parse_args():
     # fmt: off

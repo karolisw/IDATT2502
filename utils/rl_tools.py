@@ -1,7 +1,5 @@
 import gym
-import procgen
 from procgen import ProcgenEnv
-from gym import spaces, utils
 import os
 import numpy as np
 from stable_baselines3.common.vec_env import VecFrameStack
@@ -16,7 +14,7 @@ import pybullet_envs
     #VecFrameStack,
     #VecNormalize
 
-from gym_minigrid.wrappers import * # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
+from gym_minigrid.wrappers import OneHotPartialObsWrapper,FlatObsWrapper # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
@@ -48,9 +46,20 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
         env = VecNormalize(venv=env, norm_obs=True, norm_reward=True, clip_obs=10.)
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
+
+        '''
+        env = ProcgenEnv(num_envs=64,
+                    env_name="bigfish",
+                    start_level=0,
+                    num_levels=10000,
+                    distribution_mode="easy",
+                    render_mode="rgb_array")
+        '''
+
+
         #env = gym.make("procgen:procgen-bigfish-v0", render_mode="human")
-        env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#render_mode="human", 
-                        center_agent=False,distribution_mode="easy")
+        env = gym.make("procgen:procgen-bigfish-v0", num_levels=10000, start_level=0,render_mode="rgb_array",#render_mode="human", 
+                        center_agent=False,distribution_mode="easy") # could do center agent false
         #env = procgen.ProcgenEnv(env_name='bigfish', num_envs=1)
         #env = ProcgenEnv(num_envs=32, env_name='bigfish', distribution_mode='easy')
         #env = VecExtractDictObs(env, "rgb") # To use only part of the observation

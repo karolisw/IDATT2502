@@ -4,17 +4,21 @@ import time
 import numpy as np
 from utils.mpi_utils import MPI_Tool
 from stable_baselines3.common.evaluation import evaluate_policy
-from utils.rl_tools import env_create_sb, env_create, eval_agent
+from utils.rl_tools import env_create_sb, env_create, eval_agent, SaveOnBestTrainingRewardCallback
 # from pbt_toy import pbt_engine
 from mpi4py import MPI
 from stable_baselines3 import PPO
 import gym
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback, StopTrainingOnRewardThreshold
+import pandas as pd
 
 mpi_tool = MPI_Tool()
-from tensorboardX import SummaryWriter
+from stable_baselines3.common.logger import configure
+from torch.utils.tensorboard import SummaryWriter
+#from tensorboardX import SummaryWriter
 
-
+# Path to sb3 logger
+tmp_path = "logs/sb3_logs"
 models_dir = "logs/best_models"
 
 checkpoint_callback = CheckpointCallback(
@@ -22,6 +26,9 @@ checkpoint_callback = CheckpointCallback(
             save_path="logs/checkpoints",
             name_prefix="rl_model-checkpoint",
 )
+#best_reward_callback = SaveOnBestTrainingRewardCallback(1000, "monitor/best_model", True)
+
+stop_training_callback = StopTrainingOnRewardThreshold(reward_threshold=50, verbose=1)
 
 # Separate evaluation env (for bigfish)
 eval_env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#render_mode="human", 
@@ -29,6 +36,7 @@ eval_env = gym.make("procgen:procgen-bigfish-v0", num_levels=1, start_level=0,#r
 # Use deterministic actions for evaluation
 eval_callback = EvalCallback(eval_env, best_model_save_path="logs/best_models",
                              log_path="logs/evaluations", eval_freq=5000,
+                             callback_on_new_best=stop_training_callback,
                              deterministic=True, render=False)
 
 def parse_args():
@@ -73,8 +81,8 @@ class rl_agent():
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
             self.env = env_create(env_name, idx) 
-            self.model = PPO("CnnPolicy", env=self.env, verbose=1, tensorboard_log="logs/tensorboard") #Verbose = 1 prints out all data :-)
-        elif env_name[0:5] == "nasim":
+            self.model = PPO("CnnPolicy", env=self.env, verbose=0)  #, tensorboard_log="logs/tensorboard") #Verbose = 1 prints out all data :-)
+        elif env_name[0:5] == "nasim": 
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
@@ -88,12 +96,15 @@ class rl_agent():
         self.model.gamma = gamma
         self.model.learning_rate = learning_rate 
         self.log_dir = os.path.join(log_dir, str(idx))
+        new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+        self.model.set_logger(new_logger)
+        
 
     def step(self, traing_step=2000, callback=None, vanilla=False, rmsprop=False, Adam=False):
         """one episode of RL"""
 
         # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
-        self.model.learn(total_timesteps=traing_step, tb_log_name="PPO")#, callback=[checkpoint_callback, eval_callback],)
+        self.model.learn(total_timesteps=traing_step)# callback = best_reward_callback)#, callback = eval_callback) #progress_bar=True)#, tb_log_name="PPO", callback=[checkpoint_callback, eval_callback],)
 
     def exploit(self, best_params):
 
@@ -175,11 +186,12 @@ class base_population(object):
         # Hoping to be able to call on this when we need to save the best model of the population
     def get_best_model(self):
         _best_id = self.get_best_agent()
-        return self.agents_pool[_best_id]
+        return self.agents_pool[_best_id] 
 
         # Looks like this one retrieves the id of the best model
     def get_best_agent(self):
         return self.get_scores().index(max(self.get_scores()))
+            
 
     def get_best_score(self):
         # return max(self.get_scores())
@@ -205,10 +217,14 @@ class base_population(object):
 
 
 class base_engine(object):
-    def __init__(self, tb_logger=False):
+    def __init__(self, tb_logger=True):
         self.best_score_population = 0
         if mpi_tool.is_master & (tb_logger):
-            self.tb_writer = SummaryWriter()
+            #self.tb_writer = SummaryWriter()
+            self.tb_writer = SummaryWriter("log/writer")
+
+            self.log = pd.DataFrame(columns = ['best_reward', 'best_length', 'num_episodes'])
+
         else:
             self.tb_writer = False
 
@@ -276,7 +292,8 @@ class base_engine(object):
 
                 if (i+1) % 1 == 0 and i!=0:
                     if self.tb_writer:
-                        self.tb_writer.add_scalar('Score/PBT_Results', self.best_score_population, i)
+                        self.tb_writer.add_scalar('Best_Score/PBT_Results', self.best_score_population, i)
+    
                     if return_episode_rewards:
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_length_population, i)
@@ -284,7 +301,8 @@ class base_engine(object):
                         i, self.best_score_population, self.best_length_population))
                         #print("Saving model with id: {}".format(self.population.get_best_agent()))
                         best_agent = self.population.get_best_model()
-                        print("Saving model with id: {}".format(str(best_agent.idx)))
+
+                        #print("Saving model with id: {}".format(best_agent.idx))
 
                         # saving
                         best_agent.model.save("{}/{}".format(models_dir, i))
@@ -311,7 +329,7 @@ def main():
     pbt_population.create(agent_list=[workers[i] for i in local_agent_inds])
 
     # PRINTING OUT THE ID'S FOR ALL THE AGENTS IN THE AGENT POOL -> THERE IS ONE AGENT PER THREAD :-)))))))))))))
-    for i in range(len(pbt_population.agents_pool)):
+    for i in range(len(pbt_population.agents_pool)): # pbt population is the same as population!
         print("population has id: ", pbt_population.agents_pool[i].idx)
 
     # Initializing a local engin

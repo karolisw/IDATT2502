@@ -108,9 +108,7 @@ class rl_agent(object):
         checkpoint_callback = CheckpointCallback(
             save_freq=200,
             save_path="./logs/",
-            name_prefix="rl_model",
-            save_replay_buffer=True,
-            save_vecnormalize=True,
+            name_prefix="rl_model"
 )
         self.model.learn(total_timesteps=traing_step, callback=checkpoint_callback)
       
