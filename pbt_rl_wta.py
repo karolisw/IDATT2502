@@ -4,7 +4,7 @@ import time
 import numpy as np
 from utils.mpi_utils import MPI_Tool
 from stable_baselines3.common.evaluation import evaluate_policy
-from utils.rl_tools import env_create_sb, env_create, eval_agent, SaveOnBestTrainingRewardCallback
+from utils.rl_tools import env_create_sb, env_create, eval_agent
 # from pbt_toy import pbt_engine
 from mpi4py import MPI
 from stable_baselines3 import PPO
@@ -82,6 +82,9 @@ class rl_agent():
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
             self.env = env_create(env_name, idx) 
             self.model = PPO("CnnPolicy", env=self.env, verbose=0)  #, tensorboard_log="logs/tensorboard") #Verbose = 1 prints out all data :-)
+        elif env_name[0:11] == "LunarLander":
+            self.env = env_create(env_name, idx) 
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:5] == "nasim": 
             self.env = env_create(env_name, idx)
             #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
@@ -96,7 +99,7 @@ class rl_agent():
         self.model.gamma = gamma
         self.model.learning_rate = learning_rate 
         self.log_dir = os.path.join(log_dir, str(idx))
-        new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+        new_logger = configure(tmp_path, ["csv", "tensorboard"])
         self.model.set_logger(new_logger)
         
 
@@ -305,7 +308,8 @@ class base_engine(object):
                         #print("Saving model with id: {}".format(best_agent.idx))
 
                         # saving
-                        best_agent.model.save("{}/{}".format(models_dir, i))
+                        best_agent.model.save("{}/{}".format(models_dir, "yuh"))
+            
                     else:
                         print("At iteration {} the Best Pop Score is {} and the best params are {}".format(
                         i, self.best_score_population, self.best_params_population, self))
@@ -329,8 +333,8 @@ def main():
     pbt_population.create(agent_list=[workers[i] for i in local_agent_inds])
 
     # PRINTING OUT THE ID'S FOR ALL THE AGENTS IN THE AGENT POOL -> THERE IS ONE AGENT PER THREAD :-)))))))))))))
-    for i in range(len(pbt_population.agents_pool)): # pbt population is the same as population!
-        print("population has id: ", pbt_population.agents_pool[i].idx)
+    #for i in range(len(pbt_population.agents_pool)): # pbt population is the same as population!
+     #   print("population has id: ", pbt_population.agents_pool[i].idx)
 
     # Initializing a local engin
     pbt_engine = base_engine(tb_logger=writer)
