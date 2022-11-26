@@ -336,7 +336,6 @@ class base_engine(object):
                         if self.tb_writer:
                             self.tb_writer.add_scalar('Length/PBT_Results', self.best_episode_length_population, i)
                         print("At iteration {} the Best Pop Score is {} Best Length is {} on rank {}".format(i, self.best_score_population, self.best_episode_length_population, self.best_rank ))
-                    else:
                         print("At iteration {} the Best Pop Score is {} on rank {}".format(i, self.best_score_population, self.best_rank))
                         best_agent = self.population.get_best_model()
                         print("best agent: ", best_agent)
@@ -346,8 +345,17 @@ class base_engine(object):
 
                         print("model dir exists: ", os.path.exists(models_dir))
 
+                        # saving
+                        best_agent.model.save("{}/{}".format(models_dir, i))
+                    else:
+                        print("At iteration {} the Best Pop Score is {} on rank {}".format(i, self.best_score_population, self.best_rank))
+                        best_agent = self.population.get_best_model()
+                        print("best agent: ", best_agent)
+                        print("best agent id: ", best_agent)
+                        print("best agent model: ", best_agent.model)
+                        print("best agent model id: ", best_agent.model.idx)
 
-                        #print("Saving model with id: {}".format(best_agent.idx))
+                        print("model dir exists: ", os.path.exists(models_dir))
 
                         # saving
                         best_agent.model.save("{}/{}".format(models_dir, i))
