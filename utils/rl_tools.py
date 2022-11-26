@@ -60,18 +60,18 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
 
-        env = gym.make("procgen:procgen-bigfish-v0", num_levels=200, start_level=0,render_mode="rgb_array",#render_mode="human", 
-                       distribution_mode="easy")
-        env = Monitor(env=env, filename=tmp_path, allow_early_resets=True )
+        #env = gym.make("procgen:procgen-bigfish-v0", num_levels=200, start_level=0,render_mode="rgb_array",#render_mode="human", 
+         #              distribution_mode="easy")
+        #env = Monitor(env=env, filename=tmp_path, allow_early_resets=True )
         
-        #env = ProcgenEnv(num_envs=8,
-        #        env_name="bigfish",
-        #        start_level=0,
-        #        num_levels=200,
-        #        distribution_mode="easy")
-        # env = Monitor(env=env, filename=tmp_path)  # type: ignore
+        env = ProcgenEnv(num_envs=8,
+                env_name="bigfish",
+                start_level=0,
+                num_levels=200,
+                distribution_mode="easy")
+        #env = Monitor(env=env, filename=tmp_path)  # type: ignore
         
-        #env = VecMonitor(venv=env, filename=tmp_path)  # type: ignore
+        env = VecMonitor(venv=env, filename=tmp_path)  # type: ignore
         
     else:
         env = gym.make(env_id)
