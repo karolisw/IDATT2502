@@ -1,24 +1,12 @@
 import gym
-from procgen import ProcgenEnv
 import os, time
-from os import path
 import numpy as np
 #from gym.wrappers import RecordVideo
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
-import pybullet_envs
-
-    #VecExtractDictObs,
-    #VecMonitor,
-    #VecFrameStack,
-    #VecNormalize
 
 from gym_minigrid.wrappers import OneHotPartialObsWrapper,FlatObsWrapper # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
@@ -60,18 +48,18 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
 
-        #env = gym.make("procgen:procgen-bigfish-v0", num_levels=200, start_level=0,render_mode="rgb_array",#render_mode="human", 
-         #              distribution_mode="easy")
-        #env = Monitor(env=env, filename=tmp_path, allow_early_resets=True )
-        
-        env = ProcgenEnv(num_envs=8,
+        env = gym.make("procgen:procgen-bigfish-v0", num_levels=200, start_level=0,render_mode="rgb_array",#render_mode="human", 
+                       distribution_mode="easy")
+        env = Monitor(env=env, filename=tmp_path, allow_early_resets=True )
+        '''
+        env = ProcgenEnv(num_envs=8, 
                 env_name="bigfish",
                 start_level=0,
                 num_levels=200,
                 distribution_mode="easy")
         #env = Monitor(env=env, filename=tmp_path)  # type: ignore
-        
-        env = VecMonitor(venv=env, filename=tmp_path)  # type: ignore
+        '''
+        #env = VecMonitor(venv=env, filename=tmp_path)  # type: ignore
         
     else:
         env = gym.make(env_id)
@@ -113,59 +101,6 @@ def eval_agent(model, env):
             break
     return np.sum(r)
 
-# Just to see how well the model performs with current parameters
-def eval_trained_model(path_to_model, env, nr_episodes):
-    if (path.exists(path_to_model) and path.isfile(path_to_model)):
-        gym_env = Monitor(gym.make(env))#, render_mode="human")
-        model = PPO.load(path=path_to_model, env=gym_env)
-        mean_reward, std_reward = evaluate_policy(model, gym_env, n_eval_episodes=nr_episodes)
-        print("Mean reward: {}\nStd reward: {}\n".format(mean_reward, std_reward))
-    else:
-        raise Exception("Could not find model with path: ", path_to_model)
-
-
-# For use in final comparison between this trained model and other programs model
-def test_trained_agent(path_to_model, env, nr_steps):
-
-    if (path.exists(path_to_model) and path.isfile(path_to_model)):
-            gym_env = gym.make(env )#, render_mode="rgb_array")
-            # Record video every 10th episode
-            #gym_env = RecordVideo(gym_env, 'video', episode_trigger = lambda x: x % 10 == 0) #TODO this should be on (update sb3 first)
-            model = PPO.load(path=path_to_model, env=gym_env)
-
-            all_rewards = []
-
-            obs = gym_env.reset()
-            done_testing = False
-            
-            for step in range(nr_steps):
-
-                episode_rewards = []
-                while not (done_testing):
-                    action, _states = model.predict(obs)
-                    #action, _states = model.predict(obs, deterministic=True)
-
-                    obs, rewards, done, info = gym_env.step(action)
-                    if (done):
-                        done_testing = True
-                    episode_rewards.append(rewards)   # Add reward to the list
-                    #gym_env.render()
-                    print("nr rewards: ",len(all_rewards))
-
-                # Add episode rewards to all rewards
-                all_rewards.append(episode_rewards)
-                print("The mean reward in step {} is {}".format(step, np.mean(np.array(episode_rewards))))
-
-            # When training is done, we calculate the mean of all rewards
-            all_rewards_np = np.array(all_rewards)
-
-            # Returns a dictionary that holds the mean and max reward
-            return {'Mean_reward':np.mean(all_rewards_np),
-                    'Max reward':np.max(all_rewards_np) }
-
-    # Do not train if no model :p
-    else:
-        raise Exception("Could not find model with path: ", path_to_model)    
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     """

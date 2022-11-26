@@ -275,7 +275,7 @@ conda activate ./venv
 
 Please use `mpiexec` or `mpirun` to run experiments:
 ```
-mpiexec -n 4 python pbt_rl_wta.py --num-agents 4 --env-id bigfish --tb-writer True
+mpiexec -n 4 python pbt_rl_truct.py --num-agents 4 --env-id bigfish --tb-writer True
 ```
 
 
