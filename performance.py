@@ -10,8 +10,8 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3 import PPO
 
 
-eval_dir ="logs/sb3_logs/eval" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") 
-test_dir = "logs/sb3_logs/test" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") 
+eval_dir ="logs/eval_results/" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") 
+test_dir = "logs/test_results/" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") 
 
 
 # The path must be the path to the sb3_logs directory
@@ -20,7 +20,6 @@ def eval_all_trained_models(path, env, nr_episodes):
     for run in runs: 
         # We are now at the folders containing the runs and proceed to find the models
         path_to_models = str(path) +"/"+ str(run) + "/models"
-        print(path_to_models)
         models = os.listdir(path_to_models)
         for model in models:
             model_path = path_to_models + "/" + model
@@ -115,8 +114,8 @@ def test_trained_agent(path_to_model, env, nr_steps):
         raise Exception("Could not find model with path: ", path_to_model)    
 
 
-eval_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 1000)
-test_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 1000)
+eval_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 500)
+test_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 500)
 
 # Put the best agent in a list
 # Evaluate the best performing agents
