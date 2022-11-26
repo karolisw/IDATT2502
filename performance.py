@@ -11,5 +11,3 @@ mean_max_reward2 = test_trained_agent("logs/best_models/best_model.zip","procgen
 
 print('Mean reward for model 1: ', mean_max_reward1['Mean_reward'])
 print('Mean reward for model 2: ', mean_max_reward2['Mean_reward'])
-
-

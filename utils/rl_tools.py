@@ -1,9 +1,9 @@
 import gym
 from procgen import ProcgenEnv
-import os
+import os, time
 from os import path
 import numpy as np
-from gym.wrappers import RecordVideo
+#from gym.wrappers import RecordVideo
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.callbacks import BaseCallback
@@ -11,6 +11,8 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+
 import pybullet_envs
 
     #VecExtractDictObs,
@@ -21,6 +23,8 @@ import pybullet_envs
 from gym_minigrid.wrappers import OneHotPartialObsWrapper,FlatObsWrapper # Do not remove - necessary to use OneHotPartialWrapper and FlatObsWrapper (both for MiniGrid below)
 
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+
+tmp_path = "logs/sb3_logs/truct" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") # to be able to differentiate the runs :-)
 
 
 def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_video=False, run_name="Test"):   
@@ -56,28 +60,19 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
     if env_id[0:7] == "BigFish" or env_id[0:7] == "bigfish":
         print("=="*10+"BigFish"+"=="*10)
 
-        #env = gym.make("procgen:procgen-bigfish-v0", render_mode="human")
-        env = gym.make("procgen:procgen-bigfish-v0", num_levels=10000, start_level=0,render_mode="rgb_array",#render_mode="human", 
-                        center_agent=False,distribution_mode="easy")
-                         # could do center agent false
-        #env = procgen.ProcgenEnv(env_name='bigfish', num_envs=1)
-        #env = ProcgenEnv(num_envs=32, env_name='bigfish', distribution_mode='easy')
-        #env = VecExtractDictObs(env, "rgb") # To use only part of the observation
-        # Action space should be normalized
-        #action_space = spaces.Box(low=1, high=1, shape=(4), dtype="float32")
-
-        # Wrap with a VecMonitor to collect stats and avoid errors
-        #env = VecMonitor(venv=env)
-
-        #env = VecVideoRecorder(venv=env, video_folder="logs/videos", record_video_trigger=lambda x: x == 0, video_length=100, name_prefix="random-agent-{}".format(env_id))
-
-        #env = VecNormalize(venv=env, ob=False)
-        #env = gym.make('procgen-bigfish-v0')
-        #env.seed(seed)
-        #env = Monitor(env, filename="monitor/monitor.csv")
-        #env = gym.wrappers.RecordEpisodeStatistics(env) # COuld be removed -> not tested yet
-        #env = DummyVecEnv([lambda:env]) # Slowed down the performance greatly
-        #env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)  # Also slowed down the reward
+        env = gym.make("procgen:procgen-bigfish-v0", num_levels=200, start_level=0,render_mode="rgb_array",#render_mode="human", 
+                       distribution_mode="easy")
+        env = Monitor(env=env, filename=tmp_path, allow_early_resets=True )
+        
+        #env = ProcgenEnv(num_envs=8,
+        #        env_name="bigfish",
+        #        start_level=0,
+        #        num_levels=200,
+        #        distribution_mode="easy")
+        # env = Monitor(env=env, filename=tmp_path)  # type: ignore
+        
+        #env = VecMonitor(venv=env, filename=tmp_path)  # type: ignore
+        
     else:
         env = gym.make(env_id)
         env.seed(seed)
@@ -87,9 +82,9 @@ def env_create(env_id="CartPole-v1", idx=0, seed=141, vec_env=False, capture_vid
     if capture_video:
         if idx == 0:
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-    # env.seed(seed)
-    # env.action_space.seed(seed)
-    # env.observation_space.seed(seed)
+    #env.seed(seed)
+    #env.action_space.seed(seed)
+    #env.observation_space.seed(seed)
     return env
 
  
@@ -135,7 +130,7 @@ def test_trained_agent(path_to_model, env, nr_steps):
     if (path.exists(path_to_model) and path.isfile(path_to_model)):
             gym_env = gym.make(env )#, render_mode="rgb_array")
             # Record video every 10th episode
-            #gym_env = RecordVideo(gym_env, 'video', episode_trigger = lambda x: x % 10 == 0)
+            #gym_env = RecordVideo(gym_env, 'video', episode_trigger = lambda x: x % 10 == 0) #TODO this should be on (update sb3 first)
             model = PPO.load(path=path_to_model, env=gym_env)
 
             all_rewards = []
@@ -171,14 +166,11 @@ def test_trained_agent(path_to_model, env, nr_steps):
     # Do not train if no model :p
     else:
         raise Exception("Could not find model with path: ", path_to_model)    
-    
-
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     """
     Callback for saving a model (the check is done every ``check_freq`` steps)
     based on the training reward (in practice, we recommend using ``EvalCallback``).
-
     :param check_freq:
     :param log_dir: Path to the folder where the model will be saved.
       It must contains the file created by the ``Monitor`` wrapper.
@@ -214,7 +206,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                   self.best_mean_reward = mean_reward
                   # Example for saving best model
                   if self.verbose > 0:
-                    print(f"Saving new best model to {self.save_dir}")
+                    print(f"Saving new best model to {self.save_path}")
                   _model_name = "ID_" + str(self.idx) + "_Best_Model"    
                   save_path = os.path.join(self.save_dir, _model_name)
                   self.model.save(save_path)

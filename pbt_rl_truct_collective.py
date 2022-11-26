@@ -3,7 +3,7 @@ import time
 import os
 import numpy as np
 
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO
 from utils.mpi_utils import MPI_Tool
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -79,7 +79,8 @@ class rl_agent(object):
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":
             self.env = env_create(env_name, idx, seed = self.seed) 
-            self.model = PPO("CnnPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed) 
+            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0,n_steps= 256, n_epochs=3, batch_size= 16384,
+                            gae_lambda= 0.95, clip_range= 0.2, vf_coef= 0.5, ent_coef= 0.01, max_grad_norm=0.5, normalize_advantage=True) 
         elif env_name[0:5] == "nasim":
             self.env = env_create(env_name, idx, seed=self.seed)
             #self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False, seed=self.seed)

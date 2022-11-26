@@ -4,13 +4,24 @@ import time
 import numpy as np
 from utils.mpi_utils import MPI_Tool
 from stable_baselines3.common.evaluation import evaluate_policy
-from utils.rl_tools import env_create_sb, env_create, eval_agent
+from utils.rl_tools import env_create_sb, env_create, eval_agent, SaveOnBestTrainingRewardCallback
 # from pbt_toy import pbt_engine
 from mpi4py import MPI
-from stable_baselines3 import DQN, PPO, SAC
+from stable_baselines3.common.logger import configure
+from stable_baselines3 import PPO
 mpi_tool = MPI_Tool()
 from torch.utils.tensorboard import SummaryWriter
+from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
+from stable_baselines3.common.callbacks import BaseCallback
 #from tensorboardX import SummaryWriter
+tmp_path = "logs/sb3_logs/truct" + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+models_dir = tmp_path +"/models"
+
+if not (os.path.exists(tmp_path)):
+    os.makedirs(tmp_path)
+
+if not (os.path.exists(models_dir)):
+    os.makedirs(models_dir)
 
 def parse_args():
     # fmt: off
@@ -40,37 +51,53 @@ def parse_args():
 
     return args
 
+
+
+'''
+##############
+## CALLBACK ##
+##############
+
+print('CREATING CALLBACK...')   
+
+# Saving model to same directory as Monitor directory every 'check_freq' steps
+best_reward_callback = SaveOnBestTrainingRewardCallback(check_freq=2000, log_dir = tmp_path)#=models_dir)  
+
+'''
 class rl_agent():
-    def __init__(self, idx, env_name, learning_rate, gamma, log_dir = "./tmp/gym/", seed=141) -> None:
+    def __init__(self, idx, env_name, learning_rate, gamma, log_dir = tmp_path, seed=141) -> None:
         self.idx = idx
         self.seed = seed
         self.score = 0 # For now just use reward per episode 
         self.length = 0 # For now just use length per episode 
-        
-        print("The env_name is: ", env_name)
 
         if env_name[0:8] == "MiniGrid":
             self.env = env_create(env_name, idx)
-            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
-            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
-        elif env_name[0:5] == "nasim":
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+        elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
+            self.env = env_create(env_name, idx) 
+            self.model = PPO("CnnPolicy", env=self.env, verbose=0,n_steps= 256, n_epochs=3, batch_size=256,
+                        gae_lambda= 0.95, clip_range= 0.2, vf_coef= 0.5, ent_coef= 0.01, max_grad_norm=0.5, normalize_advantage=True) 
+        elif env_name[0:11] == "LunarLander":
+            self.env = env_create(env_name, idx) 
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+        elif env_name[0:5] == "nasim": 
             self.env = env_create(env_name, idx)
-            self.model =  DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
-            #self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env= False)
+            self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:6] == "dm2gym":
             self.env = env_create(env_name, idx)
-            self.model = DQN("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
-            #self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
-        elif env_name[0:3] == "Ant":
-            self.env = env_create(env_name, idx)
-            self.model = DQN("MlpPolicy", env=self.env, verbose=0, create_eval_env=True)
-            #self.model = PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=True)
+            #self.model = DQN("MlpPolicy", env = self.env, verbose=0, create_eval_env=True)
+            self.model = PPO("MultiInputPolicy", env=self.env, verbose=0, create_eval_env=True)
         else:
-            self.model =  DQN("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
-            #self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
+            #self.model = DQN("MlpPolicy", env = env_name, verbose=0, create_eval_env=True)
+            self.model =  PPO("MlpPolicy", env=env_name, verbose=0, create_eval_env=True)
         self.model.gamma = gamma
-        self.model.learning_rate = learning_rate
+        self.model.learning_rate = learning_rate 
         self.log_dir = os.path.join(log_dir, str(idx))
+        new_logger = configure(tmp_path, ["tensorboard"]) #removed csv!
+        self.model.set_logger(new_logger)
 
     def step(self, traing_step=2000, callback=None, vanilla=False, rmsprop=False, Adam=False):
         """one episode of RL"""
@@ -153,6 +180,11 @@ class base_population(object):
         return [worker.score for worker in self.agents_pool]
         # return score
 
+     # Hoping to be able to call on this when we need to save the best model of the population
+    def get_best_model(self):
+        _best_id = self.get_best_agent()
+        return self.agents_pool[_best_id] 
+
     def get_best_agent(self):
         return self.get_scores().index(max(self.get_scores()))
 
@@ -184,7 +216,7 @@ class base_engine(object):
         self.total_population_size = total_population_size
         self.best_score_population = 0
         if mpi_tool.is_master & (tb_logger):
-            self.tb_writer = SummaryWriter()
+            self.tb_writer = SummaryWriter(log_dir=tmp_path)
         else:
             self.tb_writer = False
 
@@ -306,7 +338,19 @@ class base_engine(object):
                         print("At iteration {} the Best Pop Score is {} Best Length is {} on rank {}".format(i, self.best_score_population, self.best_episode_length_population, self.best_rank ))
                     else:
                         print("At iteration {} the Best Pop Score is {} on rank {}".format(i, self.best_score_population, self.best_rank))
-    
+                        best_agent = self.population.get_best_model()
+                        print("best agent: ", best_agent)
+                        print("best agent id: ", best_agent)
+                        print("best agent model: ", best_agent.model)
+                        print("best agent model id: ", best_agent.model.idx)
+
+                        print("model dir exists: ", os.path.exists(models_dir))
+
+
+                        #print("Saving model with id: {}".format(best_agent.idx))
+
+                        # saving
+                        best_agent.model.save("{}/{}".format(models_dir, i))
 
 def main():
 

@@ -2,6 +2,7 @@ venv
 utils/__pycache__
 logs/checkpoints
 logs/best_models
+logs/lunarlander
 logs/sb3_logs
 logs/videos
 logs/tensorboard

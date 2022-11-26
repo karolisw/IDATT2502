@@ -7,7 +7,9 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from utils.rl_tools import env_create_sb, env_create, eval_agent
 # from pbt_toy import pbt_engine
 from mpi4py import MPI
+from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
 import gym
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback, StopTrainingOnRewardThreshold
 import pandas as pd
@@ -18,7 +20,7 @@ from torch.utils.tensorboard import SummaryWriter
 #from tensorboardX import SummaryWriter
 
 # Path to sb3 logger
-tmp_path = "logs/sb3_logs"
+tmp_path = "logs/sb3_logs/run_2"
 models_dir = "logs/best_models"
 
 checkpoint_callback = CheckpointCallback(
@@ -67,6 +69,62 @@ def parse_args():
 
     return args
 
+class SaveOnBestTrainingRewardCallback(BaseCallback):
+    """
+    Callback for saving a model (the check is done every ``check_freq`` steps)
+    based on the training reward (in practice, we recommend using ``EvalCallback``).
+
+    :param check_freq:
+    :param log_dir: Path to the folder where the model will be saved.
+      It must contains the file created by the ``Monitor`` wrapper.
+    :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
+    """
+    def __init__(self, check_freq: int, log_dir: str, verbose: int = 1):
+        super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
+        self.check_freq = check_freq
+        self.log_dir = log_dir
+        self.save_path = os.path.join(log_dir, "best_model")
+        self.best_mean_reward = -np.inf
+
+    def _init_callback(self) -> None:
+        # Create folder if needed
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.check_freq == 0:
+
+          # Retrieve training reward
+          x, y = ts2xy(load_results(self.log_dir), "timesteps")
+          if len(x) > 0:
+
+              # Mean training reward over the last 100 episodes
+              mean_reward = np.mean(y[-100:])
+              #if self.verbose >= 1:
+                #print(f"Num timesteps: {self.num_timesteps}")
+                #print(f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
+
+              # New best model, you could save the agent here
+              if mean_reward > self.best_mean_reward:
+                  self.best_mean_reward = mean_reward
+                  # Example for saving best model
+                  if self.verbose >= 1:
+                    print(f"Saving new best model with reward {mean_reward} to {self.save_path}")
+                  self.model.save(self.save_path)
+
+        return True
+
+
+##############
+## CALLBACK ##
+##############
+
+print('CREATING CALLBACK...')   
+
+# Saving model to same directory as Monitor directory every 'check_freq' steps
+best_reward_callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir = tmp_path)#=models_dir)  
+    
+
 # This is the one we use 
 class rl_agent():
     def __init__(self, idx, env_name, learning_rate, gamma, log_dir = "./tmp/gym/", seed=141) -> None:
@@ -107,7 +165,7 @@ class rl_agent():
         """one episode of RL"""
 
         # Callback that saves a checkpoint to the 'logs'-folder every 500 training steps 
-        self.model.learn(total_timesteps=traing_step)# callback = best_reward_callback)#, callback = eval_callback) #progress_bar=True)#, tb_log_name="PPO", callback=[checkpoint_callback, eval_callback],)
+        self.model.learn(total_timesteps=traing_step, callback=best_reward_callback)# callback = best_reward_callback)#, callback = eval_callback) #progress_bar=True)#, tb_log_name="PPO", callback=[checkpoint_callback, eval_callback],)
 
     def exploit(self, best_params):
 
@@ -237,7 +295,7 @@ class base_engine(object):
         self.best_params_population = self.population.get_best_agent_params()
         
 
-    def run(self, steps=3, exploit=False, explore=False, agent_training_steps=1000, return_episode_rewards=True):
+    def run(self, steps=3, exploit=False, explore=False, agent_training_steps=500, return_episode_rewards=True): # Haled steps and doubled number of angents.
         print("Agents number: {} at rank {} on node {}".format(
             self.population.size, mpi_tool.rank, str(mpi_tool.node)))
         for i in range(steps):
