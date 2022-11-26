@@ -77,7 +77,7 @@ class rl_agent():
             self.model =  PPO("MlpPolicy", env=self.env, verbose=0, create_eval_env=False)
         elif env_name[0:7] == "BigFish" or env_name[0:7] == "bigfish":          
             self.env = env_create(env_name, idx) 
-            self.model = PPO("CnnPolicy", env=self.env, verbose=0,n_steps=256, n_epochs=3, batch_size=2048,
+            self.model = PPO("CnnPolicy", env=self.env, verbose=0,n_steps=256, n_epochs=3, batch_size=256,
                         gae_lambda= 0.95, clip_range= 0.2, vf_coef= 0.5, ent_coef= 0.01, max_grad_norm=0.5, normalize_advantage=True) 
         elif env_name[0:11] == "LunarLander":
             self.env = env_create(env_name, idx) 
