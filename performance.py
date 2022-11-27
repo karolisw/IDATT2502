@@ -59,8 +59,9 @@ def eval_trained_model(path_to_model, env, nr_episodes):
         mean_reward, std_reward = evaluate_policy(model, gym_env, n_eval_episodes=nr_episodes)
         print("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
         # Also write the result to file
-        with open("logs/eval_results/general_performance.txt", "w") as f:
-            f.write("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
+        if(float(mean_reward) > 7):
+            with open("logs/eval_results/general_performance.txt", "a") as f:
+                f.write("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
         
     else:
         raise Exception("Could not find model with path: ", path_to_model)
@@ -122,7 +123,7 @@ test_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 500)
 # Evaluate the best performing agents
 
 # Test the agent
-mean_max_reward1 = test_trained_agent("logs/best_models/1.zip","procgen:procgen-bigfish-v0", 10)
+mean_max_reward1 = test_trained_agent("logs/best_models/1.zip","procgen:procgen-bigfish-v0", 2)
 mean_max_reward2 = test_trained_agent("logs/best_models/best_model.zip","procgen:procgen-bigfish-v0", 10)
 
 print('Mean reward for model 1: ', mean_max_reward1['Mean_reward'])
