@@ -50,16 +50,17 @@ def eval_trained_model(path_to_model, env, nr_episodes):
         try:
             gym_env = Monitor(gym.make(env))#, render_mode="human")
             model = PPO.load(path=path_to_model, env=gym_env)
-            mean_reward, std_reward = evaluate_policy(model, gym_env, n_eval_episodes=nr_episodes)
-            print("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
         except ValueError:
             # If value-error, we use procgen-env instead
             gym_env = ProcgenEnv(num_envs=1, env_name="bigfish", render_mode="rgb_array")
             gym_env = VecMonitor(gym_env, filename=eval_dir) # type: ignore
             model = PPO.load(path=path_to_model, env=gym_env)
-            mean_reward, std_reward = evaluate_policy(model, gym_env, n_eval_episodes=nr_episodes)
-            print("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
-
+        # In both cases
+        mean_reward, std_reward = evaluate_policy(model, gym_env, n_eval_episodes=nr_episodes)
+        print("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
+        # Also write the result to file
+        with open("logs/eval_results/general_performance.txt", "w") as f:
+            f.write("Mean reward for model with path '{}' is:{}\nStd reward for model is: {}\n".format(path_to_model,mean_reward, std_reward))
         
     else:
         raise Exception("Could not find model with path: ", path_to_model)
@@ -114,7 +115,7 @@ def test_trained_agent(path_to_model, env, nr_steps):
         raise Exception("Could not find model with path: ", path_to_model)    
 
 
-eval_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 500)
+eval_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 10)
 test_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 500)
 
 # Put the best agent in a list
