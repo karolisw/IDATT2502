@@ -2,12 +2,15 @@ import os, os.path
 import gym
 import time
 import numpy as np
-from pathlib import Path
 from procgen import ProcgenEnv
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3 import PPO
+
+# For video-recording
+from stable_baselines3.common.vec_env import VecVideoRecorder
+
 from tensorboardX import SummaryWriter
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -43,12 +46,13 @@ def eval_trained_model(path_to_model, env, nr_episodes):
                 start_level=0, 
                 num_levels=0,
                 distribution_mode="easy", 
-                env_name="bigfish")
-                #render_mode="rgb_array")
+                env_name="bigfish",
+                render_mode="rgb_array")
+            gym_env = VecVideoRecorder(venv=gym_env, video_folder="video", record_video_trigger=lambda x: x % 2000 == 0, video_length=200) # type: ignore
             gym_env = VecMonitor(gym_env, filename=eval_dir) # type: ignore
             model = PPO.load(path=path_to_model, env=gym_env, custom_objects={"clip_range" : 0.2})
         except ValueError:
-            gym_env = Monitor(gym.make(env))
+            gym_env = Monitor(gym.make(env, render_mode="human"))
             model = PPO.load(path=path_to_model, env=gym_env, custom_objects={"clip_range" : 0.2})
 
         # In both cases
@@ -94,48 +98,22 @@ def create_reward_fig(rewards, path):
 
         return plt.gcf() # return figure
 
+# For videoing
+eval_trained_model("logs/sb3_logs/best_models_PBT/199.zip","procgen:procgen-bigfish-v0", 3)
+eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_3.zip","procgen:procgen-bigfish-v0", 3)
 
-
-#eval_all_trained_models("logs/sb3_logs", "procgen:procgen-bigfish-v0", 10)
-#test_all_trained_models("logs/sb3_logs/best_models", "procgen:procgen-bigfish-v0", 10)
-
-# Put the best agent in a list
-# Evaluate the best performing agents
-
-
-# Test the best agents with PBT
 '''
-eval_trained_model("logs/sb3_logs/best_models_PBT/16.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_PBT/188.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_PBT/199.zip","procgen:procgen-bigfish-v0", 10)
-
-
-# Test the best agents without PBT
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline1.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline2.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_1.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_2.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_3.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_4.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_5.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_6.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/best_model.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/bigfish_pe_1.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/bigfish_pe_2.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/bigfish_pe_3.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/bigfish_pe_4.zip","procgen:procgen-bigfish-v0", 10)
-eval_trained_model("logs/sb3_logs/best_models_regular/last_model.zip","procgen:procgen-bigfish-v0", 10)
-'''
+# Testing the two best performing models from each project
 
 pbt_mod_rewards= []
 reg_mod_rewards= []
-'''
+
 for i in range(20):
     pbt_mod_rewards.append(eval_trained_model("logs/sb3_logs/best_models_PBT/199.zip","procgen:procgen-bigfish-v0", 10))
 
 # Now we plot the testing
 create_reward_fig(pbt_mod_rewards,"logs/sb3_logs/best_models_PBT/plot")
-'''
+
 for i in range(20):
     reg_mod_rewards.append(eval_trained_model("logs/sb3_logs/best_models_regular/baseline3_3.zip","procgen:procgen-bigfish-v0", 10))
 
@@ -149,3 +127,4 @@ print("Regular models average reward: {}".format(reg_mean))
 
 
 # Baseline3_3.zip performs best
+'''
