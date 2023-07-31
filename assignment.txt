@@ -1,0 +1,3 @@
+1- odor, spore-print-color, gill-color and ring type are discriminative when tested against edibility.
+2- The most of the variance in the dataset (91% !) is made up of the features: 0.257stalk-surface-below-ring=k+0.256stalk-surface-above-ring=k+0.234ring-type=l+0.231odor=f−0.215ring-type=p...
+3- Yes, there is overlap between PCA and feature selection. Specifically I see that odor, stalk-surface-above-ring, stalk-surface-below-ring and ring type ALL fall into both of the feature selections :-)

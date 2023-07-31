@@ -1,0 +1,63 @@
+=== Run information ===
+
+Evaluator:    weka.attributeSelection.ClassifierAttributeEval -execution-slots 1 -B weka.classifiers.rules.DecisionTable -F 5 -T 0.2 -R 1 -E DEFAULT -- -X 1 -S "weka.attributeSelection.BestFirst -D 1 -N 5"
+Search:       weka.attributeSelection.Ranker -T -1.7976931348623157E308 -N 10
+Relation:     agaricus-lepiota
+Instances:    8124
+Attributes:   23
+              edibility
+              cap-shape
+              cap-surface
+              cap-color
+              bruises?
+              odor
+              gill-attachment
+              gill-spacing
+              gill-size
+              gill-color
+              stalk-shape
+              stalk-root
+              stalk-surface-above-ring
+              stalk-surface-below-ring
+              stalk-color-above-ring
+              stalk-color-below-ring
+              veil-type
+              veil-color
+              ring-number
+              ring-type
+              spore-print-color
+              population
+              habitat
+Evaluation mode:    evaluate on all training data
+
+
+
+=== Attribute Selection on all input data ===
+
+Search Method:
+	Attribute ranking.
+
+Attribute Evaluator (supervised, Class (nominal): 1 edibility):
+	Classifier feature evaluator 
+
+	Using 	Wrapper Subset Evaluator
+	Learning scheme: weka.classifiers.rules.DecisionTable
+	Scheme options: -X 1 -S weka.attributeSelection.BestFirst -D 1 -N 5 
+	Subset evaluation: classification accuracy
+	Number of folds for accuracy estimation: 5
+
+
+Ranked attributes:
+ 0.467    6 odor
+ 0.35    21 spore-print-color
+ 0.287   10 gill-color
+ 0.258   20 ring-type
+ 0.257   13 stalk-surface-above-ring
+ 0.248   14 stalk-surface-below-ring
+ 0.238    9 gill-size
+ 0.226    5 bruises?
+ 0.204   22 population
+ 0.198   15 stalk-color-above-ring
+
+Selected attributes: 6,21,10,20,13,14,9,5,22,15 : 10
+
